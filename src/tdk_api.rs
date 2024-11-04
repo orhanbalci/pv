@@ -1,22 +1,18 @@
 pub use crate::proverb::Proverb;
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 pub fn proverb_search(word: &str) -> Result<Vec<Proverb>> {
     let body =
         reqwest::blocking::get(format!("https://sozluk.gov.tr/atasozu?ara={}", word))?.text()?;
     let v: serde_json::Value = serde_json::from_str(&body)?;
-    let proverbs = v
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|v| parse_proverb(v))
-        .collect();
+    let proverbs = v.as_array().with_context(|| "Can not retrieve proverbs")?;
 
-    Ok(proverbs)
+    let pv = proverbs.iter().map(|v| parse_proverb(v)).collect();
+
+    Ok(pv)
 }
 
 pub fn parse_proverb(v: &serde_json::Value) -> Proverb {
-    println!("{}", v);
     Proverb {
         id: v
             .get("soz_id")
