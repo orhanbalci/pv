@@ -1,11 +1,12 @@
-use std::{collections::HashMap, env};
+use std::{collections::HashMap, env, fs::File};
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use getopts::Options;
 use polodb_core::{
     bson::doc, options::UpdateOptions, Collection, CollectionT, Database, IndexModel, IndexOptions,
 };
 use proverb::Proverb;
+use serde_json::to_writer_pretty;
 use tdk_api::proverb_search;
 
 pub mod proverb;
@@ -17,10 +18,19 @@ fn main() {
 
     let mut opts = Options::new();
 
-    opts.optflag("r", "refresh", "refresh proverb db from external service");
-    opts.optflag("c", "count", "number of proverbs in db");
-    opts.optopt("e", "export", "export proverbs info to json", "FILE");
-    opts.optflag("h", "help", "print this help menu");
+    opts.optflag(
+        "g",
+        "guncelle",
+        "kayitli deyim/atasozlerini tdk sozlugunden guncelle",
+    );
+    opts.optflag("s", "sayi", "veritabaninda kayitli deyim/atasozu sayisi");
+    opts.optopt(
+        "c",
+        "cikti",
+        "deyim/atasozlerini JSON formatinda kaydet",
+        "DOSYA",
+    );
+    opts.optflag("h", "yardim", "yardim menusunu goster");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -35,11 +45,14 @@ fn main() {
     }
 
     let db = Database::open_path("pv.db").unwrap();
-    if matches.opt_present("r") {
+    if matches.opt_present("g") {
         refresh_proverb_db(db);
-    } else if matches.opt_present("e") {
     } else if matches.opt_present("c") {
-        handle_proverb_count(&db);
+        handle_export(&db, matches.opt_str("c").unwrap());
+    } else if matches.opt_present("s") {
+        // handle_proverb_count(&db);
+        _list_first_100_proverbs(&db);
+        // _list_proverbs_with_id(&db);
     } else {
         print_usage(&program, opts);
     }
@@ -135,13 +148,13 @@ fn _list_proverbs_with_id(db: &Database) {
     let collection = db.collection::<Proverb>("proverbs");
     let proverbs_with_id_1 = collection
         .find(doc! {
-            "id": 7158,
+            "id": { "$eq": 1941 },
         })
         .run();
     match proverbs_with_id_1 {
         Ok(p) => {
             for proverb in p {
-                println!("{:?}", proverb);
+                println!("{:?}", proverb.unwrap());
             }
         }
         Err(e) => {
@@ -151,14 +164,55 @@ fn _list_proverbs_with_id(db: &Database) {
 }
 
 fn _list_first_100_proverbs(db: &Database) {
-    db.collection::<Proverb>("proverbs")
-        .find(doc! {})
+    let mut proverbs: Vec<Proverb> = db
+        .collection::<Proverb>("proverbs")
+        .find(doc! {
+            "id": { "$lt": 100 },
+        })
         .limit(100)
         .run()
         .expect("can not list proverbs")
-        .for_each(|p| {
-            println!("{:?}", p.unwrap());
-        });
+        .map(|p| p.unwrap())
+        .collect();
+
+    proverbs.sort_by(|a, b| a.id.cmp(&b.id));
+
+    proverbs.iter().for_each(|p| {
+        println!("{:?}", p);
+    });
+}
+
+fn handle_export(db: &Database, filename: String) {
+    // retrieve all proverbs, sort by id
+    let mut proverbs: Vec<Proverb> = db
+        .collection::<Proverb>("proverbs")
+        .find(doc! {})
+        .run()
+        .expect("can not list proverbs")
+        .map(|p| p.unwrap())
+        .collect();
+
+    proverbs.sort_by(|a, b| a.id.cmp(&b.id));
+
+    let export_result = export_to_json(&proverbs, filename.as_str());
+    match export_result {
+        Ok(_) => {
+            println!("proverbs exported to deyimler_atasozleri.json");
+        }
+        Err(e) => {
+            println!("error while exporting proverbs: {}", e);
+        }
+    }
+}
+
+fn export_to_json(items: &Vec<Proverb>, filename: &str) -> Result<()> {
+    // Open or create the file
+    let file = File::create(filename)?;
+
+    // Serialize the Vec to JSON and write to the file with pretty formatting
+    to_writer_pretty(file, &items)?;
+
+    Ok(())
 }
 
 fn _insert_proverb(collection: &Collection<Proverb>, p: &Proverb) {
