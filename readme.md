@@ -36,19 +36,22 @@ Options:
 
 ## Örnek Kullanımlar
 
-### Kayıtları Güncelleme: TDK API’den yeni deyim ve atasözlerini çekmek için:
+### Kayıtları Güncelleme
+TDK API’den yeni deyim ve atasözlerini çekmek için:
 
 ```bash
 pv -g
 ```
 
-### Kayıt Sayısını Görüntüleme: Veritabanında kayıtlı deyim/atasözü sayısını öğrenmek için:
+### Kayıt Sayısını Görüntüleme
+Veritabanında kayıtlı deyim/atasözü sayısını öğrenmek için:
 
 ```bash
 pv -s
 ```
 
-### JSON Formatında Çıktı Alma: Verileri JSON formatında output.json dosyasına kaydetmek için:
+### JSON Formatında Çıktı Alma
+Verileri JSON formatında output.json dosyasına kaydetmek için:
 
 ```bash
 pv -c output.json
@@ -57,6 +60,7 @@ pv -c output.json
 ## Örnek Çıktı Dosyası
 
 Projede bir örnek çıktı dosyası olarak `deyimler_atasozleri.json` yer almaktadır. Bu dosya, JSON formatında deyim ve atasözleri verisinin nasıl göründüğüne dair bir referans niteliğindedir ve kullanıcılara çıktı formatı hakkında bilgi sunar. Eğer uygulamadan alınan sonuçlar üzerinde işlem yapmak istiyorsanız, `deyimler_atasozleri.json` dosyasını inceleyebilirsiniz.
+Bu ciktiyi kullanarak kendiniz deyim ve atasözleri verileri üzerinde calisan uygulamalar gelistirebilerisiniz.
 
 ### Örnek `deyimler_atasozleri.json` İçeriği
 
