@@ -56,7 +56,7 @@ pv -c output.json
 
 ## Örnek Çıktı Dosyası
 
-Projede bir örnek çıktı dosyası olarak deyimler_atasozleri.json yer almaktadır. Bu dosya, JSON formatında deyim ve atasözleri verisinin nasıl göründüğüne dair bir referans niteliğindedir ve kullanıcılara çıktı formatı hakkında bilgi sunar. Eğer uygulamadan alınan sonuçlar üzerinde işlem yapmak istiyorsanız, deyimler_atasozleri.json dosyasını inceleyebilirsiniz.
+Projede bir örnek çıktı dosyası olarak `deyimler_atasozleri.json` yer almaktadır. Bu dosya, JSON formatında deyim ve atasözleri verisinin nasıl göründüğüne dair bir referans niteliğindedir ve kullanıcılara çıktı formatı hakkında bilgi sunar. Eğer uygulamadan alınan sonuçlar üzerinde işlem yapmak istiyorsanız, `deyimler_atasozleri.json` dosyasını inceleyebilirsiniz.
 
 ### Örnek `deyimler_atasozleri.json` İçeriği
 
