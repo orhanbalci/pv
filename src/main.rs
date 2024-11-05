@@ -1,15 +1,20 @@
 use std::{collections::HashMap, env, fs::File};
 
 use anyhow::{Context, Result};
+use asky::Select;
+use emojic::flat::*;
 use getopts::Options;
 use polodb_core::{
     bson::doc, options::UpdateOptions, Collection, CollectionT, Database, IndexModel, IndexOptions,
 };
 use proverb::Proverb;
+use quiz::{Question, Quiz};
+use rand::{seq::SliceRandom, Rng};
 use serde_json::to_writer_pretty;
 use tdk_api::proverb_search;
 
 pub mod proverb;
+pub mod quiz;
 pub mod tdk_api;
 
 fn main() {
@@ -29,6 +34,11 @@ fn main() {
         "cikti",
         "deyim/atasozlerini JSON formatinda kaydet",
         "DOSYA",
+    );
+    opts.optflag(
+        "q",
+        "quiz",
+        "kayitli deyim/atasozlerinden 10 soruluk quiz olustur",
     );
     opts.optflag("h", "yardim", "yardim menusunu goster");
 
@@ -50,12 +60,33 @@ fn main() {
     } else if matches.opt_present("c") {
         handle_export(&db, matches.opt_str("c").unwrap());
     } else if matches.opt_present("s") {
-        // handle_proverb_count(&db);
-        _list_first_100_proverbs(&db);
-        // _list_proverbs_with_id(&db);
+        handle_proverb_count(&db);
+    } else if matches.opt_present("q") {
+        handle_quiz(&db);
     } else {
         print_usage(&program, opts);
     }
+}
+
+fn handle_quiz(db: &Database) {
+    let mut quiz = prepare_quiz(db);
+    quiz.questions.iter_mut().for_each(|q| {
+        let choice = Select::new(&q.proverb, q.options.clone()).prompt();
+
+        match choice {
+            Ok(selection) => {
+                q.user_answer = selection;
+                if q.is_correct() {
+                    println!("{} Dogru!", CHECK_MARK_BUTTON);
+                } else {
+                    println!("{} Yanlis!", CROSS_MARK);
+                }
+            }
+            Err(_) => println!("Hata olustu"),
+        }
+
+        println!("");
+    });
 }
 
 fn handle_proverb_count(db: &Database) {
@@ -231,4 +262,40 @@ fn _insert_proverb(collection: &Collection<Proverb>, p: &Proverb) {
             UpdateOptions { upsert: Some(true) },
         )
         .expect(&format!("can not insert proverb {}", p.proverb));
+}
+
+fn prepare_quiz(db: &Database) -> Quiz {
+    let proverbs: Vec<Proverb> = db
+        .collection::<Proverb>("proverbs")
+        .find(doc! {})
+        .run()
+        .expect("can not list proverbs")
+        .map(|p| p.unwrap())
+        .collect();
+
+    let mut rng = rand::thread_rng();
+    let mut quiz = Quiz::new();
+
+    for _ in 0..10 {
+        let random_index = rng.gen_range(0..proverbs.len());
+        let asked_proverb = &proverbs[random_index];
+        let mut options = vec![asked_proverb.meaning.clone()];
+
+        while options.len() < 4 {
+            let random_index = rng.gen_range(0..proverbs.len());
+            let random_proverb = &proverbs[random_index];
+            if !options.contains(&random_proverb.meaning) {
+                options.push(random_proverb.meaning.clone());
+            }
+        }
+
+        options.shuffle(&mut rng);
+        quiz.add_question(Question::new(
+            asked_proverb.proverb.clone(),
+            options,
+            asked_proverb.meaning.clone(),
+        ));
+    }
+
+    quiz
 }
