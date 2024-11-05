@@ -1,3 +1,5 @@
+use emojic::flat::{HUNDRED_POINTS, ROCKET, THUMBS_UP};
+
 pub struct Question {
     pub proverb: String,
     pub options: Vec<String>,
@@ -33,8 +35,24 @@ impl Quiz {
         self.questions.push(question);
     }
 
-    pub fn print_score(&self) -> usize {
-        println!("")
+    pub fn print_score(&mut self) {
+        self.calculate_score();
+        if self.score == self.questions.len() as u32 {
+            println!(
+                "{}",
+                format!(
+                    "{} Tebrikler! Tüm soruları doğru cevapladınız. {}{}{}",
+                    HUNDRED_POINTS, ROCKET, ROCKET, ROCKET
+                )
+            );
+        } else {
+            println!(
+                "Puanin: {}/{} {}",
+                self.score,
+                self.questions.len(),
+                THUMBS_UP
+            );
+        }
     }
 }
 

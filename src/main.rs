@@ -10,6 +10,7 @@ use polodb_core::{
 use proverb::Proverb;
 use quiz::{Question, Quiz};
 use rand::{seq::SliceRandom, Rng};
+use regex::Regex;
 use serde_json::to_writer_pretty;
 use tdk_api::proverb_search;
 
@@ -87,6 +88,8 @@ fn handle_quiz(db: &Database) {
 
         println!("");
     });
+
+    quiz.print_score();
 }
 
 fn handle_proverb_count(db: &Database) {
@@ -279,13 +282,13 @@ fn prepare_quiz(db: &Database) -> Quiz {
     for _ in 0..10 {
         let random_index = rng.gen_range(0..proverbs.len());
         let asked_proverb = &proverbs[random_index];
-        let mut options = vec![asked_proverb.meaning.clone()];
+        let mut options = vec![cleanup(&asked_proverb.meaning)];
 
         while options.len() < 4 {
             let random_index = rng.gen_range(0..proverbs.len());
             let random_proverb = &proverbs[random_index];
             if !options.contains(&random_proverb.meaning) {
-                options.push(random_proverb.meaning.clone());
+                options.push(cleanup(&random_proverb.meaning));
             }
         }
 
@@ -293,9 +296,23 @@ fn prepare_quiz(db: &Database) -> Quiz {
         quiz.add_question(Question::new(
             asked_proverb.proverb.clone(),
             options,
-            asked_proverb.meaning.clone(),
+            cleanup(&asked_proverb.meaning),
         ));
     }
 
     quiz
+}
+
+fn cleanup(proverb_meaning: &str) -> String {
+    remove_after_char(&remove_numbered_patterns(proverb_meaning).trim_start(), ':')
+}
+
+fn remove_numbered_patterns(input: &str) -> String {
+    let re = Regex::new(r"\d+\)").unwrap(); // Matches any digit(s) followed by a closing parenthesis
+    re.replace_all(input, "").to_string() // Replaces matched patterns with an empty string
+}
+
+fn remove_after_char(input: &str, delimiter: char) -> String {
+    // Split at the first occurrence of `delimiter` and take the first part
+    input.split(delimiter).next().unwrap_or("").to_string()
 }
