@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::{collections::HashMap, env, fs::File};
 
 use anyhow::{Context, Result};
@@ -30,11 +31,12 @@ fn main() {
         "kayitli deyim/atasozlerini tdk sozlugunden guncelle",
     );
     opts.optflag("s", "sayi", "veritabaninda kayitli deyim/atasozu sayisi");
+    opts.optopt("c", "cikti", "deyim/atasozlerini diske kaydet", "DOSYA");
     opts.optopt(
-        "c",
-        "cikti",
-        "deyim/atasozlerini JSON formatinda kaydet",
-        "DOSYA",
+        "f",
+        "format",
+        "deyim/atasozlerini kaydetme formati (json, sql)",
+        "FORMAT",
     );
     opts.optflag(
         "q",
@@ -59,7 +61,15 @@ fn main() {
     if matches.opt_present("g") {
         refresh_proverb_db(db);
     } else if matches.opt_present("c") {
-        handle_export(&db, matches.opt_str("c").unwrap());
+        if matches.opt_present("f") {
+            handle_export(
+                &db,
+                matches.opt_str("c").unwrap(),
+                matches.opt_str("f").unwrap(),
+            );
+        } else {
+            print_usage(&program, opts);
+        }
     } else if matches.opt_present("s") {
         handle_proverb_count(&db);
     } else if matches.opt_present("q") {
@@ -216,7 +226,7 @@ fn _list_first_100_proverbs(db: &Database) {
     });
 }
 
-fn handle_export(db: &Database, filename: String) {
+fn handle_export(db: &Database, filename: String, format: String) {
     // retrieve all proverbs, sort by id
     let mut proverbs: Vec<Proverb> = db
         .collection::<Proverb>("proverbs")
@@ -228,15 +238,52 @@ fn handle_export(db: &Database, filename: String) {
 
     proverbs.sort_by(|a, b| a.id.cmp(&b.id));
 
-    let export_result = export_to_json(&proverbs, filename.as_str());
-    match export_result {
-        Ok(_) => {
-            println!("proverbs exported to deyimler_atasozleri.json");
+    if format == "json" {
+        let export_result = export_to_json(&proverbs, filename.as_str());
+        match export_result {
+            Ok(_) => {
+                println!("proverbs exported to {}", filename);
+            }
+            Err(e) => {
+                println!("error while exporting proverbs: {}", e);
+            }
         }
-        Err(e) => {
-            println!("error while exporting proverbs: {}", e);
+    } else if format == "sql" {
+        let export_result = export_to_sql(&proverbs, filename.as_str());
+        match export_result {
+            Ok(_) => {
+                println!("proverbs exported to {}", filename);
+            }
+            Err(e) => {
+                println!("error while exporting proverbs: {}", e);
+            }
         }
+    } else {
+        println!("unknown format: {}", format);
     }
+}
+
+fn export_to_sql(proverbs: &[Proverb], filename: &str) -> Result<()> {
+    let mut file = File::create(filename)?;
+    writeln!(
+        file,
+        "CREATE TABLE proverb (
+            id    integer PRIMARY KEY,
+            proverb   varchar(500) NOT NULL,
+            meaning   varchar(500) NOT NULL,
+            proverb_type   varchar(10) NOT NULL,
+         );"
+    )?;
+
+    proverbs.iter().for_each(|p| {
+        _ = writeln!(
+            file,
+            "INSERT INTO proverb (id, proverb, meaning, proverb_type) VALUES ({}, '{}', '{}', '{}');",
+            p.id, p.proverb, p.meaning, p.proverb_type
+        );
+    });
+
+    Ok(())
 }
 
 fn export_to_json(items: &Vec<Proverb>, filename: &str) -> Result<()> {
