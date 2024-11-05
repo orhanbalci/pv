@@ -7,6 +7,8 @@ Bu proje, TDK (Türk Dil Kurumu) API’lerini kullanarak Türkçe deyim ve atas�
 - **Deyim ve Atasözü Sorgulama**: TDK API’si üzerinden deyim ve atasözleri sorgulaması yapar.
 - **Veri Saklama**: Sorgulanan deyim ve atasözlerini lokal olarak saklar.
 - **JSON Dışa Aktarma**: Toplanan verileri JSON formatında dışa aktarma seçeneği sunar.
+- **Quiz Oluşturma**: Kaydedilen deyim ve atasözlerinden rastgele bir 10 soruluk quiz oluşturur.
+
 
 ## Gereksinimler
 
@@ -56,6 +58,18 @@ Verileri JSON formatında output.json dosyasına kaydetmek için:
 ```bash
 pv -c output.json
 ```
+
+## Quiz Özelliği
+Uygulama, kayıtlı deyim ve atasözlerinden rastgele 10 soruluk bir quiz oluşturur. Aşağıda örnek bir quiz sorusu yer almaktadır:
+
+```bash
+▣ öfkesi kabarmak
+● çok kızmak, sakinleşmişken yeniden öfkelenmek, tekrar sinirlenmek.
+○ gerektiğinden çok önce veya henüz ortada hiçbir şey yokken hazırlanmaya kalkışmak.
+○ taşıt hurdaya çıkmak.
+○ direnmek, istememek, inat etmek, sinirlenmek.
+```
+
 
 ## Örnek Çıktı Dosyası
 
