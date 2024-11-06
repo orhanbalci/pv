@@ -267,19 +267,22 @@ fn export_to_sql(proverbs: &[Proverb], filename: &str) -> Result<()> {
     let mut file = File::create(filename)?;
     writeln!(
         file,
-        "CREATE TABLE proverb (
+        "CREATE TABLE IF NOT EXISTS proverb (
             id    integer PRIMARY KEY,
             proverb   varchar(500) NOT NULL,
             meaning   varchar(500) NOT NULL,
-            proverb_type   varchar(10) NOT NULL,
+            proverb_type   varchar(10) NOT NULL
          );"
     )?;
+
+    writeln!(file, "DELETE FROM proverb;")?;
 
     proverbs.iter().for_each(|p| {
         _ = writeln!(
             file,
-            "INSERT INTO proverb (id, proverb, meaning, proverb_type) VALUES ({}, '{}', '{}', '{}');",
-            p.id, p.proverb, p.meaning, p.proverb_type
+
+            "INSERT INTO proverb (id, proverb, meaning, proverb_type) VALUES ({}, \'{}\', \'{}\', \'{}\');",
+            p.id, p.proverb.replace("\'", "\'\'"), p.meaning.replace("\'", "\'\'"), p.proverb_type.replace("\'", "\'\'")
         );
     });
 
